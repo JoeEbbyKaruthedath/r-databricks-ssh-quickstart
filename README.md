@@ -29,7 +29,7 @@ fits a linear model in R, and writes the result to a Unity Catalog table.
 
 Not supported for R:
 
-- **Serverless compute** does not support R.
+- **Serverless compute** does not support R, in notebooks, jobs, or SSH sessions ([serverless limitations](https://docs.databricks.com/aws/en/compute/serverless/limitations)).
 - **Standard (shared) access mode** does not support R or SSH. Use dedicated access mode.
 - **SQL warehouses** run SQL only.
 
@@ -254,35 +254,3 @@ Notes:
   `method = "databricks_connect"`. `taxi_fares.R` doesn't connect itself when it is `source()`d, so the same file
   works in both places.
 - If the job needs extra CRAN packages, add them to the task as `libraries` (same format as `libraries.json`).
-
-## Tips and gotchas
-
-- **Use `method = "databricks_connect"` over SSH.** `method = "databricks"` only works inside notebooks and jobs.
-  Over SSH it quietly starts a separate local Spark with no Unity Catalog access
-  (error: `No FileSystem for scheme "dbfs"`).
-- **Upgrade the R packages together** (`dplyr`, `dbplyr`, `sparklyr`, `reticulate`, `pysparklyr`), as in
-  `libraries.json`. Installing `pysparklyr` alone upgrades `sparklyr` past the runtime's `dplyr`, and `sparklyr`
-  then fails to load (`filter_out` not exported).
-- **Install from Posit Package Manager binaries**, not the default CRAN mirror. Source builds are slow and can fail.
-- **Only `/Workspace`, `/Volumes`, and `/dbfs` persist.** Everything else on the cluster, including `/tmp` and
-  packages installed with `install.packages()` in a session, is reset when the cluster restarts.
-- **Limits:** up to 10 SSH connections per cluster, and idle sessions can drop after about an hour.
-  Reconnect with `ssh r-dev`.
-
-## Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| `ssh r-dev` fails with an authentication error | Your login expired: `databricks auth login --profile <profile-name>` |
-| `ssh r-dev` waits for several minutes | The cluster is starting. Start it ahead of time: `databricks clusters start <your-cluster-id> --profile <profile-name>` |
-| R code pasted into the terminal gives `bash: syntax error` | You are in the shell, not R. Type `R` first and wait for the `>` prompt |
-| `No FileSystem for scheme "dbfs"` | Connect with `method = "databricks_connect"` (see above) |
-| `there is no package called 'pysparklyr'` | The cluster libraries aren't installed or are still installing. Check the cluster's **Libraries** tab |
-| VS Code times out connecting | Start the cluster first, or raise the `remote.SSH.connectTimeout` setting |
-
-## Clean up
-
-```bash
-databricks jobs delete <job_id> --profile <profile-name>
-databricks clusters permanent-delete <your-cluster-id> --profile <profile-name>
-```
