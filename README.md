@@ -124,14 +124,13 @@ They differ in where your code lives and how you send it to the cluster.
 |---|---|---|---|
 | [1. Terminal](#option-1-terminal) | Quick interactive work, no IDE | Copied to the cluster for the session | SSH only |
 | [2. VS Code on the cluster](#option-2-vs-code-on-the-cluster) | Full IDE experience: editing, autocomplete, Cmd+Enter to run | On the cluster: a workspace folder (persists) or `/tmp` (temporary) | VS Code + Remote - SSH and R extensions |
-| [3. Local editor + remote R](#option-3-local-editor--remote-r) | IDE look and feel when you can't install extensions | Your laptop | Any editor with a terminal |
-| [4. Run one local script](#option-4-run-one-local-script) | Running a finished, self-contained script | Your laptop only; nothing is copied | SSH only |
-| [5. Run a local multi-file project](#option-5-run-a-local-multi-file-project) | Running a project whose files `source()` each other | Your laptop; temporary copy on the cluster | SSH + `scp` |
-| [6. Keep the code in the workspace](#option-6-keep-the-code-in-the-workspace) | Teams sharing code, files that survive cluster restarts | Databricks workspace (synced from your laptop or a Git folder) | Databricks CLI |
+| [3. Run one local script](#option-3-run-one-local-script) | Running a finished, self-contained script | Your laptop only; nothing is copied | SSH only |
+| [4. Run a local multi-file project](#option-4-run-a-local-multi-file-project) | Running a project whose files `source()` each other | Your laptop; temporary copy on the cluster | SSH + `scp` |
+| [5. Keep the code in the workspace](#option-5-keep-the-code-in-the-workspace) | Teams sharing code, files that survive cluster restarts | Databricks workspace (synced from your laptop or a Git folder) | Databricks CLI |
 | [Scheduled job](#schedule-it-as-a-job) | Production runs | This repo, deployed to the workspace by the bundle | Databricks CLI |
 
 **Suggested path:** start with option 1 or 2 to explore, keep the code in Git, and deploy it as a scheduled job
-with the bundle. Options 4 and 5 are handy for running local code without storing anything in the workspace.
+with the bundle. Options 3 and 4 are handy for running local code without storing anything in the workspace.
 
 Before running, edit `catalog <- "main"` near the top of `explore.R` to a catalog where you can create a schema.
 
@@ -161,33 +160,14 @@ The whole VS Code window runs on the cluster: the file browser, terminal, and R 
 2. Command Palette → **Remote-SSH: Connect to Host** → `r-dev`. If asked for the platform, choose **Linux**.
 3. **File → Open Folder**:
    - a workspace folder such as `/Workspace/Users/<your-email>/<project>` if the files should persist
-     (see [option 6](#option-6-keep-the-code-in-the-workspace) for getting them there), or
+     (see [option 5](#option-5-keep-the-code-in-the-workspace) for getting them there), or
    - `/tmp` for throwaway work (copy files there with `scp` as in option 1).
 4. In the remote window, install the **R** extension (REditorSupport) with **Install in SSH: r-dev**.
    The `languageserver` package it needs was installed in setup step 4.
 5. Open `explore.R`, run **R: Create R Terminal** from the Command Palette, and send lines with Cmd+Enter
    (Ctrl+Enter on Windows/Linux).
 
-### Option 3: Local editor + remote R
-
-Use this if you can't install VS Code extensions. The editor shows your local files; the R session runs on the cluster.
-
-1. Open this repo's folder in VS Code (or any editor with a built-in terminal).
-2. In the editor's terminal:
-
-   ```bash
-   scp explore.R taxi_fares.R r-dev:/tmp/
-   ssh r-dev
-   cd /tmp
-   R
-   ```
-
-3. Select lines in `explore.R`, then Command Palette → **Terminal: Run Selected Text In Active Terminal**.
-   This is built into VS Code, so no extension is needed. Copy and paste also works.
-
-Re-run the `scp` line after you change a file that another file `source()`s.
-
-### Option 4: Run one local script
+### Option 3: Run one local script
 
 ```bash
 ssh r-dev 'Rscript - main' < taxi_fares.R
@@ -195,9 +175,9 @@ ssh r-dev 'Rscript - main' < taxi_fares.R
 
 SSH streams the file into R on the cluster, which runs it and keeps nothing. `Rscript -` reads the script from SSH,
 and `main` is the catalog argument. This only works for self-contained scripts: a script that `source()`s other
-files or reads local data files can't find them. Use option 5 for those.
+files or reads local data files can't find them. Use option 4 for those.
 
-### Option 5: Run a local multi-file project
+### Option 4: Run a local multi-file project
 
 ```bash
 scp explore.R taxi_fares.R r-dev:/tmp/
@@ -208,7 +188,7 @@ ssh r-dev 'cd /tmp && Rscript -e "source(\"explore.R\", echo = TRUE, max.deparse
 back). `/tmp` on the cluster is wiped when the cluster restarts, so your local copy remains the only lasting one.
 Re-run `scp` after you edit locally.
 
-### Option 6: Keep the code in the workspace
+### Option 5: Keep the code in the workspace
 
 Files in `/Workspace` persist across cluster restarts, are visible in the Databricks UI, and can be shared with
 your team. Choose one:
