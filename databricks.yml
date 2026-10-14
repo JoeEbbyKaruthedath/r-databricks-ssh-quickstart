@@ -1,4 +1,4 @@
-# Databricks Asset Bundle (DAB) for the scheduled R job.
+# Declarative Automation Bundle (DAB) for the scheduled R job.
 # The workspace comes from your CLI profile: pass --profile <profile-name> to every bundle command.
 
 bundle:

@@ -227,7 +227,7 @@ Then work in that folder with option 1 (`cd /Workspace/Users/<your-email>/<proje
 
 ## Schedule it as a job
 
-The job is deployed with a **Databricks Asset Bundle (DAB)**. Its definition lives in this repo as code
+The job is deployed with a **Declarative Automation Bundle (DAB)**. Its definition lives in this repo as code
 (`databricks.yml` and `resources/r_taxi_fares.job.yml`), and one command creates or updates it in any workspace,
 the same way every time.
 
