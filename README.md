@@ -18,7 +18,8 @@ fits a linear model in R, and writes the result to a Unity Catalog table.
 | `r_job.r` | Databricks notebook that the scheduled job runs; it `source()`s `taxi_fares.R` |
 | `cluster.json` | Development cluster definition |
 | `libraries.json` | R packages to install on the development cluster |
-| `job.json` | Scheduled job that runs `r_job.r` straight from this Git repo |
+| `databricks.yml` | Bundle configuration: settings (catalog, machine type) and `dev` / `prod` targets |
+| `resources/r_taxi_fares.job.yml` | The scheduled job that runs `r_job.r` |
 
 ## Recommended compute for R
 
@@ -127,10 +128,10 @@ They differ in where your code lives and how you send it to the cluster.
 | [4. Run one local script](#option-4-run-one-local-script) | Running a finished, self-contained script | Your laptop only; nothing is copied | SSH only |
 | [5. Run a local multi-file project](#option-5-run-a-local-multi-file-project) | Running a project whose files `source()` each other | Your laptop; temporary copy on the cluster | SSH + `scp` |
 | [6. Keep the code in the workspace](#option-6-keep-the-code-in-the-workspace) | Teams sharing code, files that survive cluster restarts | Databricks workspace (synced from your laptop or a Git folder) | Databricks CLI |
-| [Scheduled job](#schedule-it-as-a-job) | Production runs | Git repo (recommended) or workspace | Databricks CLI |
+| [Scheduled job](#schedule-it-as-a-job) | Production runs | This repo, deployed to the workspace by the bundle | Databricks CLI |
 
-**Suggested path:** start with option 1 or 2 to explore, keep the code in Git, and schedule it as a job that runs
-from Git. Options 4 and 5 are handy for running local code without storing anything in the workspace.
+**Suggested path:** start with option 1 or 2 to explore, keep the code in Git, and deploy it as a scheduled job
+with the bundle. Options 4 and 5 are handy for running local code without storing anything in the workspace.
 
 Before running, edit `catalog <- "main"` near the top of `explore.R` to a catalog where you can create a schema.
 
@@ -226,31 +227,50 @@ Then work in that folder with option 1 (`cd /Workspace/Users/<your-email>/<proje
 
 ## Schedule it as a job
 
-The job runs the `r_job.r` notebook, which `source()`s the same `taxi_fares.R` you run over SSH. It runs on job
-compute: a new cluster starts for each run and terminates afterwards. Choose where the job reads the code from:
+The job is defined as a **Declarative Automation Bundle** (formerly Databricks Asset Bundles, or DABs):
+`databricks.yml` plus `resources/r_taxi_fares.job.yml`. It runs the `r_job.r` notebook, which `source()`s the same
+`taxi_fares.R` you run over SSH. It runs on job compute: a new cluster starts for each run and terminates afterwards.
 
-| | **From Git (recommended)** | **From workspace files** |
+**1. Set the variables.** Change the defaults in `databricks.yml`, or pass `--var name=value` to each command:
+
+| Variable | Default | Set it to |
 |---|---|---|
-| How | Each run checks out the branch from this repo | Runs the files in a workspace folder ([option 6](#option-6-keep-the-code-in-the-workspace)) |
-| Pros | Nothing stored in the workspace; every run uses reviewed, committed code | No Git credential needed |
-| In `job.json` | Keep `git_source`; `notebook_task` is `"notebook_path": "r_job", "source": "GIT"` | Remove `git_source`; set `"notebook_path": "/Workspace/Users/<your-email>/<project>/r_job", "source": "WORKSPACE"` |
+| `catalog` | `main` | A catalog where you can create a schema |
+| `node_type_id` | `i3.xlarge` | A machine type for your cloud (see [sizing](#recommended-compute-for-r)) |
 
-1. Edit `job.json`: set `git_url` to this repo's HTTPS URL (or switch to workspace files as above), the `catalog`
-   default, and `node_type_id` for your cloud.
-2. Create the job and run it once:
+**2. Validate, deploy, and run** (from the repo folder):
 
-   ```bash
-   databricks jobs create --json @job.json --profile <profile-name>     # returns job_id
-   databricks jobs run-now <job_id> --profile <profile-name>
-   ```
+```bash
+databricks bundle validate -t dev --profile <profile-name>
+databricks bundle deploy   -t dev --profile <profile-name>
+databricks bundle run r_taxi_fares -t dev --profile <profile-name>     # runs once and waits for the result
+```
 
-3. The schedule (daily 06:00 UTC) is created **paused**. Unpause it in the Jobs UI when ready.
+`deploy` uploads the repo files to your bundle folder,
+`/Workspace/Users/<your-email>/.bundle/r-databricks-ssh-quickstart/<target>`, and creates or updates the job.
+Re-run `deploy` after every code change.
+
+**3. Deploy to production** with the same commands and `-t prod`.
+
+| Target | Job name | Schedule |
+|---|---|---|
+| `dev` (default) | Prefixed with `[dev <your-name>]`, so you can test changes without touching production | Always paused |
+| `prod` | `r-taxi-fares-by-hour` | As defined in `resources/r_taxi_fares.job.yml` |
+
+The schedule (daily 06:00 UTC) is defined as **paused**. When you're ready, change `pause_status` to `UNPAUSED` in
+`resources/r_taxi_fares.job.yml` and deploy `prod` again. For production, deploy from CI (for example GitHub Actions)
+so the job always matches the main branch.
 
 Notes:
 
-- For a private repo, add a Git credential for your Git provider in Databricks first
-  (**Settings → Linked accounts**).
 - In notebooks and jobs, sparklyr connects with `spark_connect(method = "databricks")`. Over SSH, the scripts use
   `method = "databricks_connect"`. `taxi_fares.R` doesn't connect itself when it is `source()`d, so the same file
   works in both places.
-- If the job needs extra CRAN packages, add them to the task as `libraries` (same format as `libraries.json`).
+- If the job needs extra CRAN packages, add them to the task in `resources/r_taxi_fares.job.yml`:
+
+  ```yaml
+  libraries:
+    - cran:
+        package: <package>
+        repo: https://packagemanager.posit.co/cran/__linux__/noble/latest
+  ```

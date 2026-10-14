@@ -1,0 +1,28 @@
+resources:
+  jobs:
+    r_taxi_fares:
+      name: r-taxi-fares-by-hour
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+      job_clusters:
+        - job_cluster_key: r_single_node
+          new_cluster:
+            spark_version: 17.3.x-scala2.13
+            node_type_id: ${var.node_type_id}
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*, 4]
+            custom_tags:
+              ResourceClass: SingleNode
+      tasks:
+        - task_key: taxi_fares_by_hour
+          job_cluster_key: r_single_node
+          notebook_task:
+            notebook_path: ../r_job.r
+      schedule:
+        quartz_cron_expression: 0 0 6 * * ?
+        timezone_id: UTC
+        pause_status: PAUSED

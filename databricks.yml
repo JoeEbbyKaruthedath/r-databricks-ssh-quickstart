@@ -1,0 +1,26 @@
+# Declarative Automation Bundle (formerly Databricks Asset Bundles) for the scheduled R job.
+# The workspace comes from your CLI profile: pass --profile <profile-name> to every bundle command.
+
+bundle:
+  name: r-databricks-ssh-quickstart
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog where the job creates r_demo.taxi_fares_by_hour
+    default: main
+  node_type_id:
+    description: Job cluster machine type for your cloud (e.g. AWS i3.xlarge, Azure Standard_D8ds_v5, GCP n2-standard-8)
+    default: i3.xlarge
+
+targets:
+  dev:
+    default: true
+    mode: development
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
