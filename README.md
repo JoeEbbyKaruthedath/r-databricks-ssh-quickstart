@@ -227,9 +227,12 @@ Then work in that folder with option 1 (`cd /Workspace/Users/<your-email>/<proje
 
 ## Schedule it as a job
 
-The job is defined as a **Declarative Automation Bundle** (formerly Databricks Asset Bundles, or DABs):
-`databricks.yml` plus `resources/r_taxi_fares.job.yml`. It runs the `r_job.r` notebook, which `source()`s the same
-`taxi_fares.R` you run over SSH. It runs on job compute: a new cluster starts for each run and terminates afterwards.
+The job is deployed with a **Databricks Asset Bundle (DAB)**. Its definition lives in this repo as code
+(`databricks.yml` and `resources/r_taxi_fares.job.yml`), and one command creates or updates it in any workspace,
+the same way every time.
+
+The job runs the `r_job.r` notebook, which `source()`s the same `taxi_fares.R` you run over SSH. It runs on job
+compute: a new cluster starts for each run and terminates afterwards.
 
 **1. Set the variables.** Change the defaults in `databricks.yml`, or pass `--var name=value` to each command:
 
