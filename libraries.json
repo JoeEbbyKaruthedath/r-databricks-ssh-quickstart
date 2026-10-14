@@ -1,0 +1,11 @@
+{
+  "cluster_id": "<your-cluster-id>",
+  "libraries": [
+    {"cran": {"package": "dplyr",          "repo": "https://packagemanager.posit.co/cran/__linux__/noble/latest"}},
+    {"cran": {"package": "dbplyr",         "repo": "https://packagemanager.posit.co/cran/__linux__/noble/latest"}},
+    {"cran": {"package": "sparklyr",       "repo": "https://packagemanager.posit.co/cran/__linux__/noble/latest"}},
+    {"cran": {"package": "reticulate",     "repo": "https://packagemanager.posit.co/cran/__linux__/noble/latest"}},
+    {"cran": {"package": "pysparklyr",     "repo": "https://packagemanager.posit.co/cran/__linux__/noble/latest"}},
+    {"cran": {"package": "languageserver", "repo": "https://packagemanager.posit.co/cran/__linux__/noble/latest"}}
+  ]
+}

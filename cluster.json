@@ -1,0 +1,14 @@
+{
+  "cluster_name": "r-dev",
+  "spark_version": "17.3.x-scala2.13",
+  "node_type_id": "i3.xlarge",
+  "num_workers": 0,
+  "data_security_mode": "SINGLE_USER",
+  "single_user_name": "<your-email>",
+  "autotermination_minutes": 45,
+  "spark_conf": {
+    "spark.databricks.cluster.profile": "singleNode",
+    "spark.master": "local[*, 4]"
+  },
+  "custom_tags": {"ResourceClass": "SingleNode"}
+}
